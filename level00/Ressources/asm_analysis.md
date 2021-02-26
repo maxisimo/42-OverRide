@@ -88,21 +88,22 @@ End of assembler dump.
    0x080484a4 <+16>:	call   0x8048390 <puts@plt>
 ```
 <+9> : Set argument for `puts()` function.  
-<+16> : Call to `puts()` function with value at address `esp` as argument *puts("")*.
+<+16> : Call to `puts()` function with value at address `esp` as argument
+*``'*' <repeats 35 times>``*.
 ```
    0x080484a9 <+21>:	mov    DWORD PTR [esp],0x8048614
    0x080484b0 <+28>:	call   0x8048390 <puts@plt>
 ```
 <+21> : Set argument for `puts()` function.  
 <+28> : Call to `puts()` function with value at address `esp` as argument.  
-*`'*' <repeats 35 times>`*.
+*`"* \t     -Level00 -\t\t  *"`*.
 ```
    0x080484b5 <+33>:	mov    DWORD PTR [esp],0x80485f0
    0x080484bc <+40>:	call   0x8048390 <puts@plt>
 ```
 <+33> : Set argument for `puts()` function.  
 <+40> : Call to `puts()` function with value at address `esp` as argument.  
-*`"* \t     -Level00 -\t\t  *"`*.
+*``'*' <repeats 35 times>``*.
 ```
    0x080484c1 <+45>:	mov    eax,0x804862c
    0x080484c6 <+50>:	mov    DWORD PTR [esp],eax
