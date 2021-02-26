@@ -63,6 +63,7 @@ level01@OverRide:~$
 ```
 Find its address with gdb and add some bytes to the address founded in order to jump into the nop sled :
 ```
+https://security.stackexchange.com/questions/13194/finding-environment-variables-with-gdb-to-exploit-a-buffer-overflow
 (gdb) set disassembly-flavor intel
 (gdb) disass main
 Dump of assembler code for function main:
