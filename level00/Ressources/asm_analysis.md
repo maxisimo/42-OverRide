@@ -122,7 +122,7 @@ End of assembler dump.
 <+63> : Load the effective address `esp+0x1c` in `edx`, so `edx` is now pointing on `esp+0x1c` (perfect, scanf() function need a pointer as second argument).  
 <+67> - <+71> : Set arguments for `scanf()` function.  
 <+74> : Call to `scanf()` function with values at addresses `esp` and `esp+4` as arguments.  
-*`scanf("%d", &pwd)`*
+*`scanf("%d", &pwd)`*  
 At this moment the stack should like :
 ```
                    High addresses
