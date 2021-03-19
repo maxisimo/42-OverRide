@@ -2,12 +2,12 @@
 #include <string.h>
 #include <stdlib.h>
 
-char username[100];
+char a_user_name[100];
 
 int     verify_user_name(void)
 {
     puts("verifying username....\n");
-    return strncmp(username, "dat_wil", 7);
+    return strncmp(a_user_name, "dat_wil", 7);
 }
 
 int     verify_user_pass(char *password)
@@ -22,7 +22,7 @@ int     main()
 
     puts("********* ADMIN LOGIN PROMPT *********");
     printf("Enter Username: ");
-    fgets(username, 256, stdin);
+    fgets(a_user_name, 256, stdin);
     
     verify = verify_user_name();
     if (verify != 0)
