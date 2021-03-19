@@ -207,32 +207,32 @@ Dump of assmbler code for function main:
    0x08048585 <+181>:	mov    DWORD PTR [esp+0x5c],eax
 ```
 <+169> - <+181> : Call to `verify_user_pass()` function with value at `esp+0x1c` (pwd string) as argument and save it return value at `esp+0x5c` (verify variable).
-
-************
-HERE
-************
-
 ```
    0x08048589 <+185>:	cmp    DWORD PTR [esp+0x5c],0x0
    0x0804858e <+190>:	je     0x8048597 <main+199>
    0x08048590 <+192>:	cmp    DWORD PTR [esp+0x5c],0x0
    0x08048595 <+197>:	je     0x80485aa <main+218>
 ```
-Double cmp verify == 0 with jumps to differents addresses
+<+185> : Compare the value stored in `esp+0x5c` to 0.  
+<+190> : JE comparaison. If the value in `esp+0x5c` is equal to 0, jump to the address `0x8048597` (main+199), otherwise continue.  
+<+192> - <+197> : Same comparaison with a jump to the address `0x80485aa` (main+218).  
+*nb: The second cmp/je are not necessary because if the value stored in `esp+0x5c` is equal to 0, we'll pass over it with the first jump (main+199). And if it's not equal to 0 we'll continue to the next instruction (main+199).*
 ```
    0x08048597 <+199>:	mov    DWORD PTR [esp],0x804871e
    0x0804859e <+206>:	call   0x8048380 <puts@plt>
 ```
-+206 : *`"nope, incorrect password...\n"`*
+<+199> : Set argument for `puts()` function.  
+<+206> : Call to `puts()` function with value at address `esp` as argument.  
+*`"nope, incorrect password...\n"`*
 ```
    0x080485a3 <+211>:	mov    eax,0x1
    0x080485a8 <+216>:	jmp    0x80485af <main+223>
 ```
-return(1)
+<+211> - <+216> : Store 1 into `eax` before jump to `0x80485af` (main+223) in order to quit the function by returning 1.
 ```
    0x080485aa <+218>:	mov    eax,0x0
 ```
-return(0)
+<+218> : Store 0 into `eax` before continue to `0x80485af` (main+223) in order to quit the function by returning 0.
 ```
    0x080485af <+223>:	lea    esp,[ebp-0x8]
    0x080485b2 <+226>:	pop    ebx
@@ -240,7 +240,7 @@ return(0)
    0x080485b4 <+228>:	pop    ebp
    0x080485b5 <+229>:	ret
 ```
-<+223> - <+227> : Give back esp value (esp at aligned 16-bytes) then pop ebx and edi to retrieve their old values.  
+<+223> - <+227> : Give back esp value (esp aligned at 16-bytes) then pop ebx and edi in order to retrieve their old values.  
 <+228> : Retrieve the old ebp.  
 *Instructions `lea esp,[ebp-0x8]` and `pop ebp` combined are very similar to leave instruction.*  
 <+229> : Retrieve the next instructions after the call of the main() function !
@@ -278,7 +278,99 @@ End of assembler dump.
 
 ## verify_name explanations
 ```
+   0x08048464 <+0>:	push   ebp
+   0x08048465 <+1>:	mov    ebp,esp
+   0x08048467 <+3>:	push   edi
+   0x08048468 <+4>:	push   esi
+   0x08048469 <+5>:	sub    esp,0x10
 ```
+<+0> : Push `ebp` to save the beginning of the previous function's stackframe.  
+<+1> : Stores the contents of ESP (Stack Pointer), where the address of the top of the stack is contained, in EBP.  
+<+3> - <+4> : Save the old values of `edi` and `esi`.  
+<+5> : 16 bytes are allocated to the function for its local variables.  
+```
+   0x0804846c <+8>:	mov    DWORD PTR [esp],0x8048690
+   0x08048473 <+15>:	call   0x8048380 <puts@plt>
+```
+<+8> : Set argument for `puts()` function.  
+<+15> : Call to `puts()` function with value at address `esp` as argument.  
+*`"verifying username....\n"`*.
+```
+   0x08048478 <+20>:	mov    edx,0x804a040
+   0x0804847d <+25>:	mov    eax,0x80486a8
+   0x08048482 <+30>:	mov    ecx,0x7
+   0x08048487 <+35>:	mov    esi,edx
+   0x08048489 <+37>:	mov    edi,eax
+   0x0804848b <+39>:	repz cmps BYTE PTR ds:[esi],BYTE PTR es:[edi]
+   0x0804848d <+41>:	seta   dl
+   0x08048490 <+44>:	setb   al
+   0x08048493 <+47>:	mov    ecx,edx
+   0x08048495 <+49>:	sub    cl,al
+   0x08048497 <+51>:	mov    eax,ecx
+   0x08048499 <+53>:	movsx  eax,al
+   0x0804849c <+56>:	add    esp,0x10
+```
+*The [cmps](https://c9x.me/x86/html/file_module_x86_id_38.html) instruction compares `esi` to `edi` by substracting them (as a `sub dest, src`) and sets the status flags CF (Carry Flag) and ZF (Zero Flag) in the [EFLAGS](http://www.c-jump.com/CIS77/ASM/Instructions/I77_0070_eflags_bits.htm) register according to the results.*  
+*The `repz` prefix means to increment `esi` and `edi` then repeat cmps until `ecx` or ZF flag is not equal to 0*  
+
+<+20> - <+39> : The `repz cmps BYTE PTR ds:[esi],BYTE PTR es:[edi]` instruction compare the N first byte of the two strings into ds:[esi] and es:[edi], where N is the value of `ecx`. It is similar to `strncmp()` function in C (strncmp(username, "dat_wil", 7)).  
+*nb : The rest of the program depends on the values of CF and ZF, here are the different possible combinations depending on `cmps` instruction :*  
+```
+cmps BYTE PTR ds:[esi],BYTE PTR es:[edi]         ZF     CF
+-----------------------------------------------------------
+BYTE PTR ds:[esi] = BYTE PTR es:[edi]            1       0
+
+BYTE PTR ds:[esi] < BYTE PTR es:[edi]            0       1 
+
+BYTE PTR ds:[esi] > BYTE PTR es:[edi]            0       0 
+```
+*During the rest of the code, we'll suppose that the two strings into ds:[esi] and es:[edi] was equal.*  
+<+41> : Set `dl` to 1 if CF=0 and ZF=0, otherwise 0  
+*`dl` is a sub register, [click here](https://www.gladir.com/CODER/ASM8086/registre.htm) if you need more informations. You may also need some documentation about [movsx](https://www.gladir.com/LEXIQUE/ASM/movsx.htm) instruction!*
+```
+1. edx = 0x0804a040 =  0000100000000100   10100000   01000000
+                      |________________| |________| |________|
+                          dh: 0x0804      dh: 0xa0   dl: 0x40
+2. dl = 0b00000000
+3. edx = 0x0804a000 =  0000100000000100   10100000   00000000
+                      |________________| |________| |________|
+                          dh: 0xbfff      dh: 0xf6   dl: 0x00
+```
+<+44> : Set `al` to 1 if CF=1, othewise 0
+```
+1. eax = 0x080486a8 =  0000100000000100   10000110   10101000
+                      |________________| |________| |________|
+                          dh: 0x0804      dh: 0x86   dl: 0xa8
+2. al = 0b00000000
+3. eax = 0x08048600 =  0000100000000100   10000110   00000000
+                      |________________| |________| |________|
+                          dh: 0x0804      dh: 0x88   dl: 0x00
+```
+=> `dl` or `al` will be set to 1 if "strncmp" didn't return 0 (I know it's not a real strncmp but this way is easier to understand).  
+<+47> : Save the value at `edx` in `ecx` (`0xbffff600`).  
+<+49> : `cl` = `cl` - `al` (this change nothing only if "strncmp" return 0).  
+<+51> : Save the value at `ecx` in `eax` (`0xbffff600`).  
+<+53> : Copies the contents of the 8-bit register (`al`) to the 32-bit register (`eax`) with a sign extension.
+```
+                            +-------------+
+al:                         |  0 0000000  |   8 bits
+                            +-/-----------+
+                             /      |
+                            /       |
+                           /        |
+eax:  000000000000000000000000 00000000       32 bits
+          sign extension         copy
+```
+<+56> : Remove the 16 bytes allocated to the function.
+```
+   0x0804849f <+59>:	pop    esi
+   0x080484a0 <+60>:	pop    edi
+   0x080484a1 <+61>:	pop    ebp
+   0x080484a2 <+62>:	ret
+```
+<+59> - <+60> : Pop `esi` and `edi` to retrieve their old values.  
+<+61> : Retrieve the old `ebp`.  
+<+62> : Retrieve the next instructions after the call of the `main()` function !
 
 
 # verify_user_pass
@@ -309,5 +401,55 @@ End of assembler dump.
 ```
 
 ## verify_pass explanations
+Same explanations as `verify_user_name` : *`strncmp(password, "admin", 5)`*.  
+Except that we retrieve the argument passed to the function (`mov    eax,DWORD PTR [ebp+0x8]`).  
+Lets's see how the stack should look like :
 ```
+                   High addresses
+
+                |     OLD_EBP     |
+                +-----------------+    ----+
+                :                 :        |
+                :   extra space   :        |
+                :   (alignment)   :        |
+                :                 :        |
+                +-----------------+        |
+                :      verify     :        |
+ EBP+0x64 =>    +-----------------+        |
+                :                 :        |
+                :                 :        |
+                :                 :        |
+                :                 :        |
+                :                 :        |
+                :                 :        |
+                :       uni*      :        |
+                :                 :        |
+                :                 :        |
+                :                 :        |
+                :                 :        |
+                :                 :        |
+                :                 :        |   main stackframe
+                +-----------------+        |  96 bytes allocated
+                :     pwd[64]     :        |
+ EBP+0x24 =>    +-----------------+        |
+                :                 :        |
+                :                 :        |
+                :                 :        |
+                :       uni*      :        |
+                :                 :        |
+                :                 :        |
+                +-----------------+        |
+                :      stdin      :        |
+ EBP+0x10 =>    +-----------------+        |
+                :       100       :        |
+  EBP+0xc =>    +-----------------+        |
+                :  "nope, [...]"  :        |
+  EBP+0x8 =>    +-----------------+        |
+                :    MAIN_EIP     :        |
+  EBP+0x4 =>    +-----------------+        |
+                :    MAIN_EBP     :        |
+EBP / ESP =>    +-----------------+    ----+  verify_user_pass stackframe 0 bytes allocated
+                   Low addresses
+
+*uni : uninitialized
 ```
