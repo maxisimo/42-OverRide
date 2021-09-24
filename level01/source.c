@@ -17,7 +17,7 @@ int     verify_user_pass(char *password)
 
 int     main()
 {
-    char    password[64] = {0};
+    char    password[64] = { };
     int     verify = 0;
 
     puts("********* ADMIN LOGIN PROMPT *********");
@@ -35,7 +35,7 @@ int     main()
     fgets(password, 100, stdin);
 
     verify = verify_user_pass(password);
-    if (verify == 0 || verify != 0)
+    if (verify == 0)
     {
         puts("nope, incorrect password...\n");
         return (1);

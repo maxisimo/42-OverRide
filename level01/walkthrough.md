@@ -1,5 +1,4 @@
 # 1st Step
-  
 List the files will show us `level01` executable
 ```
 level01@OverRide:~$ ls -l

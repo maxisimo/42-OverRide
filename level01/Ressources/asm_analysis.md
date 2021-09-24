@@ -109,7 +109,7 @@ Dump of assmbler code for function main:
 ```
 <+0> : Push `ebp` to save the beginning of the previous function's stackframe.  
 <+1> : Stores the contents of ESP (Stack Pointer), where the address of the top of the stack is contained, in EBP.  
-<+3> - <+4> : Save theold values of `edi` and `ebx`.
+<+3> - <+4> : Save the old values of `edi` and `ebx`.
 ```
    0x080484d5 <+5>:	and    esp,0xfffffff0
    0x080484d8 <+8>:	sub    esp,0x60
