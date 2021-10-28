@@ -40,5 +40,8 @@ int     main()
         puts("nope, incorrect password...\n");
         return (1);
     }
+    if (verify == 0)
+        return (0);
+    puts("nope, incorrect password...\n");
     return (0);
 }

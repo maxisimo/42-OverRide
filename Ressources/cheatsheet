@@ -1,0 +1,10 @@
+- gdb PROG
+    - disass main
+    - info functions
+    - set disassembly-flavor intel
+
+- r2
+    - afl (list functions)
+    - s sym.main
+    - pdf
+    - af
