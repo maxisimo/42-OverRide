@@ -209,42 +209,60 @@ End of assembler dump.
    0x0000000000400814 <+0>:	push   rbp
    0x0000000000400815 <+1>:	mov    rbp,rsp
 ```
+<+0> : Push rbp to save the beginning of the previous function's stackframe.  
+<+1> : Stores the contents of RSP (Stack Pointer), where the address of the top of the stack is contained, in RBP.  
 ```
    0x0000000000400818 <+4>:	sub    rsp,0x120
    0x000000000040081f <+11>:	mov    DWORD PTR [rbp-0x114],edi
    0x0000000000400825 <+17>:	mov    QWORD PTR [rbp-0x120],rsi
 ```
+<+4> : 288 bytes are allocated to the main function for its local variables.  
+<+11> :   
+<+17> :   
 ```
    0x000000000040082c <+24>:	lea    rdx,[rbp-0x70]
    0x0000000000400830 <+28>:	mov    eax,0x0
    0x0000000000400835 <+33>:	mov    ecx,0xc
    0x000000000040083a <+38>:	mov    rdi,rdx
    0x000000000040083d <+41>:	rep stos QWORD PTR es:[rdi],rax
-```
-```
    0x0000000000400840 <+44>:	mov    rdx,rdi
    0x0000000000400843 <+47>:	mov    DWORD PTR [rdx],eax
    0x0000000000400845 <+49>:	add    rdx,0x4
+```
+<+24> - <+41> : For ecx repetitions, stores the contents of rax into where rdi points to, incrementing or decrementing rdi (depending on the direction flag) by 4 bytes each time. Each iteration, ecx is decremented by 1, and the loop stops when it reaches zero. This is a kind of memset on the buffer start at address rbp-0x70. (memset(buffer, 0, 48)) // 0xc = 12; 12*4 = 48.  
+<+44> : Store the value of rdi in rdx.  
+<+47> : Store the value of eax in the address pointed by rdx.  
+<+49> : Add 4 bytes to rdx.  
+```
    0x0000000000400849 <+53>:	lea    rdx,[rbp-0xa0]
    0x0000000000400850 <+60>:	mov    eax,0x0
    0x0000000000400855 <+65>:	mov    ecx,0x5
    0x000000000040085a <+70>:	mov    rdi,rdx
    0x000000000040085d <+73>:	rep stos QWORD PTR es:[rdi],rax
-```
-```
    0x0000000000400860 <+76>:	mov    rdx,rdi
    0x0000000000400863 <+79>:	mov    BYTE PTR [rdx],al
    0x0000000000400865 <+81>:	add    rdx,0x1
+```
+<+53> - <+73> : For ecx repetitions, stores the contents of rax into where rdi points to, incrementing or decrementing rdi (depending on the direction flag) by 4 bytes each time. Each iteration, ecx is decremented by 1, and the loop stops when it reaches zero. This is a kind of memset on the buffer start at address rbp-0xa0. (memset(buffer, 0, 20)) // 0x5 = 5; 5*4 = 20.  
+<+76> : Store the value of rdi in rdx.  
+<+79> : Store the value of al in the address pointed by rdx.  
+*`al` is a sub register, [click here](https://www.gladir.com/CODER/ASM8086/registre.htm) if you need more informations.*  
+<+81> : Add 1 bytes to rdx.  
+```
    0x0000000000400869 <+85>:	lea    rdx,[rbp-0x110]
    0x0000000000400870 <+92>:	mov    eax,0x0
    0x0000000000400875 <+97>:	mov    ecx,0xc
    0x000000000040087a <+102>:	mov    rdi,rdx
    0x000000000040087d <+105>:	rep stos QWORD PTR es:[rdi],rax
-```
-```
    0x0000000000400880 <+108>:	mov    rdx,rdi
    0x0000000000400883 <+111>:	mov    DWORD PTR [rdx],eax
    0x0000000000400885 <+113>:	add    rdx,0x4
+``` 
+<+85> - <+105> : For ecx repetitions, stores the contents of rax into where rdi points to, incrementing or decrementing rdi (depending on the direction flag) by 4 bytes each time. Each iteration, ecx is decremented by 1, and the loop stops when it reaches zero. This is a kind of memset on the buffer start at address rbp-0x110. (memset(buffer, 0, 48)) // 0xc = 12; 12*4 = 48.  
+<+108> : Store the value of rdi in rdx.  
+<+111> : Store the value of eax in the address pointed by rdx.  
+<+113> : Add 4 bytes to rdx.  
+```
    0x0000000000400889 <+117>:	mov    QWORD PTR [rbp-0x8],0x0
    0x0000000000400891 <+125>:	mov    DWORD PTR [rbp-0xc],0x0
    0x0000000000400898 <+132>:	mov    edx,0x400bb0
